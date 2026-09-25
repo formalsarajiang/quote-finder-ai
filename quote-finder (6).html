@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Quote Finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0c14;
+      --surface: #12121e;
+      --ivory: #f0ead8;
+      --muted: #7a7590;
+      --gold: #c9a84c;
+      --rose: #b87878;
+      --sage: #6e9e7e;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ivory);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+
+    /* Subtle star-field background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 15%, rgba(255,255,255,0.10) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.08) 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.12) 0%, transparent 100%),
+        radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,0.07) 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.09) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 55% 90%, rgba(255,255,255,0.06) 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.08) 0%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 3rem 2rem;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+    }
+
+    .eyebrow {
+      font-size: 0.65rem;
+      font-weight: 400;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 400;
+      color: var(--ivory);
+      line-height: 1.15;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    /* ── Quote stage ── */
+    .stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 740px;
+      text-align: center;
+      padding: 2rem 0;
+    }
+
+    .prompt-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-style: italic;
+      letter-spacing: 0.04em;
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    }
+
+    .prompt-text.hidden { opacity: 0; pointer-events: none; }
+
+    .quote-display {
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+      pointer-events: none;
+      position: absolute;
+      width: 100%;
+      max-width: 680px;
+      padding: 0 1rem;
+    }
+
+    .quote-display.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+      position: relative;
+    }
+
+    .accent-line {
+      width: 2px;
+      height: 0;
+      margin: 0 auto 1.8rem;
+      transition: height 0.5s ease 0.2s, background 0.3s ease;
+    }
+
+    .quote-display.visible .accent-line {
+      height: 3rem;
+    }
+
+    .quote-text {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.15rem, 3vw, 1.65rem);
+      font-weight: 400;
+      line-height: 1.65;
+      color: var(--ivory);
+      font-style: italic;
+      max-width: 60ch;
+      margin: 0 auto 1.6rem;
+    }
+
+    .quote-text::before { content: '\201C'; }
+    .quote-text::after  { content: '\201D'; }
+
+    .attribution {
+      font-size: 0.78rem;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .attribution .name {
+      font-weight: 500;
+      font-size: 0.82rem;
+      color: var(--ivory);
+      opacity: 0.85;
+    }
+
+    /* ── Buttons ── */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      width: 100%;
+    }
+
+    .controls-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .buttons {
+      display: flex;
+      gap: 0.9rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      position: relative;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--ivory);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 400;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.75rem 2rem;
+      cursor: pointer;
+      transition: border-color 0.25s, color 0.25s, background 0.25s;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .btn:hover { background: rgba(255,255,255,0.04); }
+
+    .btn.intelligence { --accent: var(--gold); }
+    .btn.resilience   { --accent: var(--sage); }
+    .btn.compassion   { --accent: var(--rose); }
+
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255,255,255,0.03); }
+
+    .btn .dot {
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-right: 0.55rem;
+      vertical-align: middle;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .btn.active .dot, .btn:hover .dot { opacity: 1; }
+
+    /* ── Loading shimmer ── */
+    @keyframes shimmer {
+      0%   { opacity: 0.3; }
+      50%  { opacity: 0.7; }
+      100% { opacity: 0.3; }
+    }
+
+    .btn[style*="opacity"] .dot {
+      animation: shimmer 1s ease-in-out infinite;
+    }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      .quote-display, .accent-line, .prompt-text { transition: none; }
+    }
+
+    @media (max-width: 480px) {
+      .wrapper { padding: 2rem 1.2rem; }
+      .buttons { flex-direction: column; align-items: stretch; }
+      .btn { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <p class="eyebrow">A curated collection</p>
+    <h1>Words worth<br><em>carrying with you</em></h1>
+  </header>
+
+  <div class="stage">
+    <p class="prompt-text" id="promptText">Choose a virtue below to receive its wisdom.</p>
+    <div class="quote-display" id="quoteDisplay">
+      <div class="accent-line" id="accentLine"></div>
+      <p class="quote-text" id="quoteText"></p>
+      <div class="attribution">
+        <span class="name" id="quotePerson"></span><br>
+        <span id="quoteWork"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <p class="controls-label">Explore a virtue</p>
+    <div class="buttons">
+      <button class="btn intelligence" onclick="showQuote('intelligence')">
+        <span class="dot"></span>Intelligence
+      </button>
+      <button class="btn resilience" onclick="showQuote('resilience')">
+        <span class="dot"></span>Resilience
+      </button>
+      <button class="btn compassion" onclick="showQuote('compassion')">
+        <span class="dot"></span>Compassion
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const ALL_QUOTES = {
+    intelligence: [
+      { text: "The true sign of intelligence is not knowledge but imagination.", person: "Albert Einstein", work: null },
+      { text: "It takes something more than intelligence to act intelligently.", person: "Fyodor Dostoyevsky", work: "Crime and Punishment" },
+      { text: "The test of a first-rate intelligence is the ability to hold two opposed ideas in the mind at the same time, and still retain the ability to function.", person: "F. Scott Fitzgerald", work: "The Crack-Up" },
+      { text: "Talent hits a target no one else can hit; genius hits a target no one else can see.", person: "Arthur Schopenhauer", work: null },
+      { text: "I know that I am intelligent, because I know that I know nothing.", person: "Socrates", work: null },
+      { text: "Intelligence plus character — that is the goal of true education.", person: "Martin Luther King Jr.", work: null },
+      { text: "I'm a pessimist because of intelligence, but an optimist because of will.", person: "Antonio Gramsci", work: "Prison Letters" },
+      { text: "Man becomes man only by the intelligence, but he is man only by the heart.", person: "Henri Frédéric Amiel", work: "Journal Intime" },
+      { text: "Anyone who conducts an argument by appealing to authority is not using his intelligence — he is just using his memory.", person: "Leonardo da Vinci", work: null },
+      { text: "It is the mark of an educated mind to be able to entertain a thought without accepting it.", person: "Aristotle", work: null },
+      { text: "Nothing whets the intelligence more than a passionate suspicion.", person: "Stefan Zweig", work: "The Burning Secret" },
+      { text: "Knowing others is intelligence; knowing yourself is true wisdom. Mastering others is strength; mastering yourself is true power.", person: "Lao Tzu", work: "Tao Te Ching" },
+      { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", person: "Aristotle", work: "Nicomachean Ethics" },
+      { text: "The mind is not a vessel to be filled, but a fire to be kindled.", person: "Plutarch", work: "On Listening to Lectures" },
+      { text: "The brain is wider than the sky.", person: "Emily Dickinson", work: null },
+      { text: "Common sense is not so common.", person: "Voltaire", work: "A Pocket Philosophical Dictionary" },
+      { text: "The intelligent man finds almost everything ridiculous, the sensible man hardly anything.", person: "Johann Wolfgang von Goethe", work: null },
+      { text: "It is not enough to have a good mind; the main thing is to use it well.", person: "René Descartes", work: "Discourse on the Method" },
+      { text: "All our knowledge begins with the senses, proceeds then to the understanding, and ends with reason.", person: "Immanuel Kant", work: "Critique of Pure Reason" },
+      { text: "Logic will get you from A to Z; imagination will get you everywhere.", person: "Albert Einstein", work: null },
+    ],
+    resilience: [
+      { text: "I can be changed by what happens to me. But I refuse to be reduced by it.", person: "Maya Angelou", work: null },
+      { text: "The best way out is always through.", person: "Robert Frost", work: "A Servant to Servants" },
+      { text: "It is really wonderful how much resilience there is in human nature. Let any obstructing cause, no matter what, be removed in any way, even by death, and we fly back to first principles of hope and enjoyment.", person: "Bram Stoker", work: "Dracula" },
+      { text: "My barn having burned down, I can now see the moon.", person: "Mizuta Masahide", work: "Barn's Burnt Down" },
+      { text: "The world breaks everyone, and afterward, some are strong at the broken places.", person: "Ernest Hemingway", work: "A Farewell to Arms" },
+      { text: "In the depth of winter, I finally learned that within me there lay an invincible summer.", person: "Albert Camus", work: null },
+      { text: "Out of suffering have emerged the strongest souls; the most massive characters are seared with scars.", person: "Kahlil Gibran", work: null },
+      { text: "The impediment to action advances action. What stands in the way becomes the way.", person: "Marcus Aurelius", work: "Meditations" },
+      { text: "When we are no longer able to change a situation, we are challenged to change ourselves.", person: "Viktor Frankl", work: "Man's Search for Meaning" },
+      { text: "Kites rise highest against the wind, not with it.", person: "Winston Churchill", work: null },
+      { text: "He who has a why to live can bear almost any how.", person: "Friedrich Nietzsche", work: "Twilight of the Idols" },
+      { text: "Although the world is full of suffering, it is also full of the overcoming of it.", person: "Helen Keller", work: "Optimism" },
+      { text: "We suffer more often in imagination than in reality.", person: "Seneca", work: "Letters from a Stoic" },
+      { text: "Fall seven times, stand up eight.", person: "Japanese Proverb", work: null },
+      { text: "Even the darkest night will end and the sun will rise.", person: "Victor Hugo", work: "Les Misérables" },
+      { text: "I am not afraid of storms, for I am learning how to sail my ship.", person: "Louisa May Alcott", work: "Little Women" },
+      { text: "Everything can be taken from a man but one thing: the last of the human freedoms — to choose one's attitude in any given set of circumstances.", person: "Viktor Frankl", work: "Man's Search for Meaning" },
+      { text: "Never give in. Never give in. Never, never, never, never.", person: "Winston Churchill", work: null },
+      { text: "The oak fought the wind and was broken, the willow bent when it must and survived.", person: "Robert Jordan", work: "The Fires of Heaven" },
+      { text: "Our greatest glory is not in never falling, but in rising every time we fall.", person: "Confucius", work: null },
+    ],
+    compassion: [
+      { text: "Love and compassion are necessities, not luxuries. Without them, humanity cannot survive.", person: "Dalai Lama", work: "The Art of Happiness" },
+      { text: "If we have no peace, it is because we have forgotten that we belong to each other.", person: "Mother Teresa", work: null },
+      { text: "For there is nothing heavier than compassion. Not even one's own pain weighs so heavy as the pain one feels with someone, for someone.", person: "Milan Kundera", work: "The Unbearable Lightness of Being" },
+      { text: "Our human compassion binds us the one to the other — not in pity or patronizingly, but as human beings who have learnt how to turn our common suffering into hope for the future.", person: "Nelson Mandela", work: null },
+      { text: "The whole idea of compassion is based on a keen awareness of the interdependence of all these living beings, which are all part of one another, and all involved in one another.", person: "Thomas Merton", work: "Choosing to Love the World: On Contemplation" },
+      { text: "Compassion is not a relationship between the healer and the wounded. It's a relationship between equals. Only when we know our own darkness well can we be present with the darkness of others.", person: "Pema Chödrön", work: "Comfortable with Uncertainty" },
+      { text: "The purpose of human life is to serve, and to show compassion and the will to help others.", person: "Albert Schweitzer", work: null },
+      { text: "Wisdom, compassion, and courage are the three universally recognized moral qualities of men.", person: "Confucius", work: "The Analects" },
+      { text: "If once we admit, be it for a single hour or in a single instance, that there can be anything more important than compassion for a fellow human being, then there is no crime against man that we cannot commit with an easy conscience.", person: "Leo Tolstoy", work: null },
+      { text: "Compassion is the chief law of human existence.", person: "Fyodor Dostoyevsky", work: null },
+      { text: "We must learn to regard people less in the light of what they do or omit to do, and more in the light of what they suffer.", person: "Dietrich Bonhoeffer", work: null },
+      { text: "Compassion is a verb.", person: "Thich Nhat Hanh", work: null },
+      { text: "No act of kindness, no matter how small, is ever wasted.", person: "Aesop", work: "The Lion and the Mouse" },
+      { text: "You can always give something, even if it is only kindness.", person: "Anne Frank", work: "The Diary of a Young Girl" },
+      { text: "Be kind, for everyone you meet is fighting a harder battle.", person: "Plato", work: null },
+      { text: "Compassion is the basis of morality.", person: "Arthur Schopenhauer", work: "On the Basis of Morality" },
+      { text: "The wound is the place where the Light enters you.", person: "Rumi", work: null },
+      { text: "If your compassion does not include yourself, it is incomplete.", person: "Jack Kornfield", work: null },
+      { text: "We think too much and feel too little. More than machinery, we need humanity. More than cleverness, we need kindness and gentleness.", person: "Charlie Chaplin", work: "The Great Dictator" },
+      { text: "In separateness lies the world's great misery, in compassion lies the world's true strength.", person: "The Buddha", work: null },
+    ],
+  };
+
+  const colors = {
+    intelligence: '#c9a84c',
+    resilience:   '#6e9e7e',
+    compassion:   '#b87878',
+  };
+
+  // Per-category shuffled queues — runs through all before repeating
+  const queues = { intelligence: [], resilience: [], compassion: [] };
+
+  function shuffled(arr) {
+    const a = [...arr.keys()];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function nextQuote(category) {
+    if (queues[category].length === 0) {
+      const indices = shuffled(ALL_QUOTES[category]);
+      // Prevent the first quote of a new cycle matching the last of the old
+      queues[category] = indices;
+    }
+    return ALL_QUOTES[category][queues[category].shift()];
+  }
+
+  let busy = false;
+
+  function showQuote(category) {
+    if (busy) return;
+    busy = true;
+
+    const display    = document.getElementById('quoteDisplay');
+    const promptText = document.getElementById('promptText');
+    const btn        = document.querySelector(`.btn.${category}`);
+
+    document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const wasVisible = display.classList.contains('visible');
+    display.classList.remove('visible');
+
+    const q = nextQuote(category);
+
+    setTimeout(() => {
+      document.getElementById('quoteText').textContent = q.text;
+      document.getElementById('quotePerson').textContent = q.person;
+      document.getElementById('quoteWork').textContent = q.work || '';
+      document.getElementById('accentLine').style.background = colors[category];
+      display.classList.add('visible');
+      promptText.classList.add('hidden');
+      busy = false;
+    }, wasVisible ? 700 : 0);
+  }
+</script>
+</body>
+</html>
